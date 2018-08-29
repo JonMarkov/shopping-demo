@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
+    <style>
+        td img{
+            width: 50px;
+            height: 50px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="container">
+        <div class="row">
+            <table class="table table-bordered">
+                <caption class="h2 text-center text-warning">武强小卖店</caption>
+                <tr>
+                    <td>全选<input type="checkbox" v-model="checkAll" @change="changeAll()"></td>
+                    <td>商品</td>
+                    <td>单价</td>
+                    <td>数量</td>
+                    <td>小计</td>
+                    <td>操作</td>
+                </tr>
+                <tr v-for="product in products">
+                    <td><input type="checkbox" v-model="product.isSelected" @change="checkOne()"></td>
+                    <td><img :src="product.productCover" :title="product.productName" alt=""> {{product.productInfo}}
+                    </td>
+                    <td>{{product.productPrice}}</td>
+                    <td><input type="number" v-model.number="product.productCount" min="1"></td>
+                    <td>{{product.productPrice * product.productCount | toFixed(2)}}</td>
+                    <td>
+                        <button class="btn btn-danger" @click="romove(product)">删除</button>
+                    </td>
+                </tr>
+                <tr><td colspan="6">总价格:{{sum() | toFixed(2)}}</td></tr>
+
+
+            </table>
+        </div>
+    </div>
+</div>
+<script src="node_modules/vue/dist/vue.js"></script>
+<script src="node_modules/axios/dist/axios.js"></script>
+<script>
+    let vm = new Vue({
+        el: "#app",
+        data: {
+            products: [],
+            checkAll:true,
+        },
+        filters: {
+            //保留两位小数；
+            toFixed(num, n) {
+                return "¥" + num.toFixed(n)
+            }
+        },
+        created() {
+            this.getData()
+        },
+        methods: {
+            //获取数据
+            getData() {
+                //通过axios获取carts的数据
+                axios.get("carts.json").then(data => {
+                    this.products = data.data;
+                }, err => {
+                })
+            },
+            //删除
+            romove(val) {
+                //当两个值相等时，返回的时false，自动将相同的这一项过滤掉
+                this.products = this.products.filter(item => val !== item)
+                //获取那些未点击的事件元素
+            },
+            checkOne(){
+                //当点击每一个input复选框时，去校验是否是所有的products中的isSelected都为true，
+                // 如果都是true，那么checkAll就是true，只要有一个是fasle，checkAll就是false；
+                this.checkAll = this.products.every(item =>item.isSelected)
+                //寻找fasle  如果有一项是fasle，就返回fasle；全是true，就返回true
+            },
+            changeAll(){
+                //如果全选是true，让下面的所有的子复选框也都是true；如果全部是false，子复选框也是false；
+                //如果改变视图，-->修改数据
+                this.products.forEach((item,index) =>{item.isSelected = this.checkAll})
+                // 遍历；如果当前checkAll为true，则点击之后为fasle，把其值赋值给每项的isSelected
+
+            },
+            sum(){
+                //计算出所有商品的总价
+                return this.products.reduce((prev,next)=>{
+                    //如果当前的商品是false，不需要进行求和计算；但是需要把以前计算的结果传给下一个计算求和
+                    if(!next.isSelected){return prev}
+                    return prev + next.productPrice * next.productCount
+                },0)
+            }
+
+        }
+    })
+</script>
+</body>
+</html>
